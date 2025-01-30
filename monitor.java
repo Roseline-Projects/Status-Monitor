@@ -95,7 +95,13 @@ class HTTPClient {
             String[] statusParts = statusLine.split(" ");
             if (statusParts.length >= 3) {
                 String statusCode = statusParts[1];
-                System.out.println("HTTP Status Code: " + statusCode);
+                if (statusCode.equals("200")) {
+                    System.out.println("Status Code: " + statusCode + " OK");
+                } else if (statusCode.equals("404")) {
+                    System.out.println("Status Code: " + statusCode + " Not Found");
+                }else if (statusCode.equals("301")) {
+                    System.out.println("Status Code: " + statusCode + " Moved permanently");
+                }
             }
         }
         String line = null;
