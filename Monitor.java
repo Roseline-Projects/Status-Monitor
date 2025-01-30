@@ -1,4 +1,5 @@
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.InputStreamReader;
@@ -43,6 +44,7 @@ public class Monitor {
         client.response();
         client.disconnect();
     }
+
 }
 
 class HTTPClient {
@@ -53,7 +55,13 @@ class HTTPClient {
 
     public HTTPClient(String host, int port) throws IOException {
         this.host = host;
-        socket = new Socket(host, port); //step 3
+        try{
+            socket = new Socket(host, port);
+        } catch(UnknownHostException exp) { //catches error when the host site doesn't exist at all
+            System.out.println("URL: " + host);
+            System.out.println("Network Error");
+            System.exit(1);
+        }
         reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
     }
@@ -74,14 +82,33 @@ class HTTPClient {
 
     public void response() throws IOException {
         System.out.println("Recieving Response...");
+        System.out.println();
+        System.out.println();
+
         String line = null;
-        while ((line = reader.readLine()) != null) {
-            if(line.contains("HTTP/1.1")) { //primitive code that finds the line with the response status and returns it
-                String[] tokens = line.split(" ");
-                System.out.println(tokens[1]);
+        String status = reader.readLine();
+        if(status != null) {
+            String[] statusTokens = status.split(" ");
+            String statusCode = statusTokens[1];
+
+            System.out.println("Status: " + status.substring(statusTokens[0].length() + 1)); //print out status code and message 
+            
+            if(statusCode.equals("301") || statusCode.equals("302")) { //if status code is 301 or 302, redirect
+                //redirection
             }
-            System.out.println(line);
+
+            System.out.println(status); //print out http response
+            while ((line = reader.readLine()) != null) {
+                System.out.println(line);
+            }
+
+        } else if(status == null || status.isEmpty()) { //no response
+            System.out.println("URL: " + host);
+            System.out.println("Status: Could not receive HTTP Response Message.");
         }
+
+        System.out.println();
+        System.out.println();
     }
 
     public void disconnect() throws IOException {
