@@ -1,4 +1,3 @@
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -7,6 +6,8 @@ import java.io.OutputStreamWriter;
 import java.net.Socket;
 
 public class monitor {
+
+    
 
     public static void main(String[] args) throws IOException {
 
@@ -89,11 +90,17 @@ class HTTPClient {
     }
 
     public void response() throws IOException {
+        String statusLine = reader.readLine();
+        if (statusLine != null) {
+            String[] statusParts = statusLine.split(" ");
+            if (statusParts.length >= 3) {
+                String statusCode = statusParts[1];
+                System.out.println("HTTP Status Code: " + statusCode);
+            }
+        }
         String line = null;
         while ((line = reader.readLine()) != null) {
             System.out.println(line);
-
-            
         }
     }
 
