@@ -10,7 +10,6 @@ public class Monitor {
     public static void main(String[] args) throws IOException {
         // get urls file from command line
         String urlsFile = null;
-        int port = 443;
         if (args.length == 0) {
             System.out.println();
             System.out.println("Usage: java monitor urls_file");
@@ -19,30 +18,64 @@ public class Monitor {
             urlsFile = args[0];
         }
 
-        String[] tokens = urlsFile.split("/+");
-        if(tokens[0].equals("http:"))
-            port = 80;
+        // String[] tokens = urlsFile.split("/+");
+        // if(tokens[0].equals("http:"))
+        //     port = 80;
 
         // create HTTP client instance for http://inet.cs.fiu.edu/
-        HTTPClient client = new HTTPClient(tokens[1], port);
+        // String req = "";
+        // if(tokens.length > 2) //checks if there's something else in the request
+        //     for(int i = 2; i < tokens.length; i++) 
+        //         req += tokens[i] + "/";
+
+        String[] urlTokens = parseURL(urlsFile); //host, port, request file
+
+        // String[] testing = parseURL(urlsFile);
+        //     for(String str: testing)
+        //      System.out.println(str);
+
+        String host = urlTokens[0];
+        int port = Integer.parseInt(urlTokens[1]);
+        String request = urlTokens[2];
+        HTTPClient client = new HTTPClient(host, port);
         if(!client.isTCPConnected()) { //checks TCP connection
-            System.out.printf("URL: " + urlsFile);
-            System.out.println("Status: Network Error");
-            System.exit(1);
+             System.out.printf("URL: " + urlsFile);
+             System.out.println("Status: Network Error");
+             System.exit(1);
         }
 
-        System.out.println("TCP Connected...");
+         System.out.println("TCP Connected...");
+        // System.out.println(host);
+        // System.out.println(port);
+        // System.out.println(request); 
+
+        // System.out.println("Testing parseURL for checking!!!");
+        // String[] testing = parseURL(urlsFile);
+        // for(String str: testing)
+        //     System.out.println(str);
+
+         client.request("/" + request);
+         client.response();
+         client.disconnect();
+    }
+
+    public static String[] parseURL(String url) {
+
+        String[] tokens = url.split("/+");
+        String port = tokens[0].equals("http:") ? "80" : "443";
+
         String req = "";
+
         if(tokens.length > 2) //checks if there's something else in the request
             for(int i = 2; i < tokens.length; i++) 
-                req += tokens[i] + "/";
+                if(i != tokens.length - 1)
+                    req += tokens[i] + "/";    
+                else    
+                    req += tokens[i];
 
-        
-        System.out.println(req); 
 
-        client.request("/" + req);
-        client.response();
-        client.disconnect();
+        String[] returnValue = new String[]{tokens[1], port, req};
+        return returnValue;
     }
 
 }
@@ -90,11 +123,20 @@ class HTTPClient {
         if(status != null) {
             String[] statusTokens = status.split(" ");
             String statusCode = statusTokens[1];
-
-            System.out.println("Status: " + status.substring(statusTokens[0].length() + 1)); //print out status code and message 
+            System.out.println("Program: Status: " + status.substring(statusTokens[0].length() + 1)); //print out status code and message
             
             if(statusCode.equals("301") || statusCode.equals("302")) { //if status code is 301 or 302, redirect
-                //redirection
+                String redirectLine = reader.readLine(); //next line
+                while((line = reader.readLine()) != null)
+                    if(line.startsWith("Location:"))
+                        redirectLine = line;
+                System.out.println("Redirection: " + redirectLine);
+                String[] redirectedURLParts = Monitor.parseURL(redirectLine);
+
+                HTTPClient redirectClient = new HTTPClient(redirectedURLParts[0], Integer.parseInt(redirectedURLParts[1]));
+                redirectClient.request("/" + redirectedURLParts[2]);
+                redirectClient.response();
+                redirectClient.disconnect();
             }
 
             System.out.println(status); //print out http response
