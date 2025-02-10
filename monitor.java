@@ -37,21 +37,18 @@ public class monitor {
             port = 443;
         }
         if(token.length > 2){
-            for(int i = 2; i< token.length; i++ ){
-            
-             path += token[i] + "/"; 
-
-            }
-
+            for(int i = 2; i< token.length; i++ )
+                    if(i == token.length - 1) {
+                        path += token[i];
+                    } else {
+                        path += token[i] + "/"; 
+                    }
         }
 // create HTTP client instance for http://inet.cs.fiu.edu/
         HTTPClient client = new HTTPClient(hostName, port);
-        if(client.isConnected()){
-            System.out.printf("URL: %s \n", urlsFile);
-            System.out.println("Status: Network error");
-
-        }
+       
         client.request("/" + path);
+         
         client.response();
         client.disconnect();
 
@@ -67,6 +64,7 @@ class HTTPClient {
 
     private String host = null; // server host
     private Socket socket = null; // TCP socket
+   
     private BufferedReader reader = null; // reader
     private BufferedWriter writer = null; // writer
 
@@ -75,6 +73,7 @@ class HTTPClient {
 
     public HTTPClient(String host, int port) throws IOException {
         this.host = host;
+       
         socket = new Socket(host, port);
         reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
@@ -91,6 +90,7 @@ class HTTPClient {
 
     public void response() throws IOException {
         String statusLine = reader.readLine();
+        
         if (statusLine != null) {
             String[] statusParts = statusLine.split(" ");
             if (statusParts.length >= 3) {
@@ -99,15 +99,66 @@ class HTTPClient {
                     System.out.println("Status Code: " + statusCode + " OK");
                 } else if (statusCode.equals("404")) {
                     System.out.println("Status Code: " + statusCode + " Not Found");
-                }else if (statusCode.equals("301")) {
+                }else if (statusCode.equals("301")|| statusCode.equals("302")) {
+                    String path = "";
+                    String locationLine = reader.readLine();
+                    String locationUrl = locationLine.split(" ")[1];
                     System.out.println("Status Code: " + statusCode + " Moved permanently");
+                    String[] token = locationUrl.split("/+");
+
+                    if(token.length > 2){
+                    
+                    for(int i = 2; i< token.length; i++ )
+                    path += token[i] ; 
+
+                    }
+                    
+                    String hostName = token[1];
+                    int port = token[0].equals("http:") ? 80 : 443;
+                    
+                            HTTPClient client = new HTTPClient(hostName, port);
+       
+                            client.request("/" + path);
+                            client.response();
+                            client.disconnect();
+                    
+                   
+
+
+
+
                 }
             }
         }
         String line = null;
+
+         String path = "";
+                    String locationLine = reader.readLine();
+                    String locationUrl = locationLine.split(" ")[1];
+                    
+                    String[] token = locationUrl.split("/+");
+
+                    if(token.length > 2){
+                    
+                    for(int i = 2; i< token.length; i++ )
+                    if(i == token.length - 1) {
+                        path += token[i];
+                    } else {
+                        path += token[i] + "/"; 
+                    }
+
+                    }
+
         while ((line = reader.readLine()) != null) {
-            System.out.println(line);
+
+
+           // System.out.println(line);
+            if(line.contains("<img src= " + path)||(line.contains("<img src= " + locationUrl))){
+                System.out.println("Object found 200 success");
+
+            }            
         }
+    
     }
 
     public void disconnect() throws IOException {
@@ -119,4 +170,6 @@ class HTTPClient {
     public boolean isConnected(){
         return socket.isConnected();
     }
+
+   
 }
