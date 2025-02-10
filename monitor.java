@@ -151,10 +151,17 @@ class HTTPClient {
 
         while ((line = reader.readLine()) != null) {
 
+          
+           
+            if(line.contains("<img src=" )){
 
-           // System.out.println(line);
-            if(line.contains("<img src= " + path)||(line.contains("<img src= " + locationUrl))){
+               String[] token1 = line.split("\"");
+               
+       
+                            this.request("/" + token1[1]);
+                           
                 System.out.println("Object found 200 success");
+
 
             }            
         }
